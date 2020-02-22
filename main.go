@@ -42,7 +42,7 @@ var newSize *int
 // if true, will use the mock data (this can be used for testing)
 var mock *bool
 
-func main() {
+func init() {
 	// capture the user parameters from the command-line
 	refresh = flag.Int("f", 100, "refresh rate to capture and display the images")
 	minTemp = flag.Float64("min", 26, "minimum temperature to measure from the sensor")
@@ -50,7 +50,9 @@ func main() {
 	newSize = flag.Int("s", 360, "new image size in pixel width")
 	mock = flag.Bool("mock", false, "run using the mock data")
 	flag.Parse()
+}
 
+func main() {
 	if *mock {
 		// start populating the mock data into grid
 		go startMock()
@@ -113,6 +115,9 @@ func getFrame(w http.ResponseWriter, r *http.Request) {
 func getColorIndex(temp float64) int {
 	if temp < *minTemp {
 		return 0
+	}
+	if temp > *maxTemp {
+		return len(colors) - 1
 	}
 	return int((temp - *minTemp) * float64(len(colors)-1) / (*maxTemp - *minTemp))
 }
