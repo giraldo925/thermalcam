@@ -30,8 +30,8 @@ var pic []int
 // temperature readings from the sensor 8x8 readings
 var grid []float64
 
-// frames per millisecond to capture and display the images
-var fps *int
+// refresh rate to capture and display the images
+var refresh *int
 
 // minimum and maximum temperature range for the sensor
 var minTemp, maxTemp *float64
@@ -44,7 +44,7 @@ var mock *bool
 
 func main() {
 	// capture the user parameters from the command-line
-	fps = flag.Int("f", 100, "frames per millisecond to capture and display the images")
+	refresh = flag.Int("f", 100, "refresh rate to capture and display the images")
 	minTemp = flag.Float64("min", 26, "minimum temperature to measure from the sensor")
 	maxTemp = flag.Float64("max", 32, "max temperature to measure from the sensor")
 	newSize = flag.Int("s", 360, "new image size in pixel width")
@@ -90,7 +90,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 	t, _ := template.ParseFiles("public/index.html")
 	// start generating frames in a new goroutine
 	go generateFrames()
-	t.Execute(w, 100)
+	t.Execute(w, *refresh)
 }
 
 // continually generate frames at every period
@@ -98,7 +98,7 @@ func generateFrames() {
 	for {
 		img := createImage(8, 8) // from 8 x 8 sensor
 		createFrame(img)         // create the frame from the sensor
-		time.Sleep(time.Duration(*fps) * time.Millisecond)
+		time.Sleep(time.Duration(*refresh) * time.Millisecond)
 	}
 }
 
@@ -166,6 +166,6 @@ func getB(i int) uint8 {
 func startThermalCam() {
 	for {
 		grid = amg.ReadPixels()
-		time.Sleep(time.Duration(*fps) * time.Millisecond)
+		time.Sleep(time.Duration(*refresh) * time.Millisecond)
 	}
 }

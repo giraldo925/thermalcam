@@ -18,7 +18,7 @@ func startMock() {
 		if n == len(mockData)-1 {
 			n = 0
 		}
-		time.Sleep(time.Duration(*fps) * time.Millisecond)
+		time.Sleep(time.Duration(*refresh) * time.Millisecond)
 	}
 }
 
