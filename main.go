@@ -8,10 +8,13 @@ import (
 	"html/template"
 	"image"
 	"image/png"
+	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
-	"github.com/disintegration/gift"
+	"github.com/nfnt/resize"
 	"github.com/sausheong/amg8833"
 )
 
@@ -42,6 +45,9 @@ var newSize *int
 // if true, will use the mock data (this can be used for testing)
 var mock *bool
 
+// directory where the public directory is in
+var dir string
+
 func init() {
 	// capture the user parameters from the command-line
 	refresh = flag.Int("f", 100, "refresh rate to capture and display the images")
@@ -50,6 +56,11 @@ func init() {
 	newSize = flag.Int("s", 360, "new image size in pixel width")
 	mock = flag.Bool("mock", false, "run using the mock data")
 	flag.Parse()
+	var err error
+	dir, err = filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {
@@ -76,7 +87,7 @@ func main() {
 
 	// setting up the web server
 	mux := http.NewServeMux()
-	mux.Handle("/public/", http.StripPrefix("/public/", http.FileServer(http.Dir("public"))))
+	mux.Handle("/public/", http.StripPrefix("/public/", http.FileServer(http.Dir(dir+"/public"))))
 	mux.HandleFunc("/", index)
 	mux.HandleFunc("/frame", getFrame)
 	server := &http.Server{
@@ -89,7 +100,7 @@ func main() {
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
-	t, _ := template.ParseFiles("public/index.html")
+	t, _ := template.ParseFiles(dir + "/public/index.html")
 	// start generating frames in a new goroutine
 	go generateFrames()
 	t.Execute(w, *refresh)
@@ -130,7 +141,7 @@ func createFrame(img image.Image) {
 }
 
 // create an enlarged image from the sensor
-func createImage(w, h int) *image.RGBA {
+func createImage(w, h int) image.Image {
 	// create a RGBA image from the sensor
 	pixels := image.NewRGBA(image.Rect(0, 0, w, h))
 	n := 0
@@ -142,13 +153,7 @@ func createImage(w, h int) *image.RGBA {
 		pixels.Pix[n+3] = 0xFF // we don't need to use this
 		n = n + 4
 	}
-	// now resize it
-	g := gift.New(
-		gift.Resize(*newSize, 0, gift.CubicResampling),
-	)
-	dest := image.NewRGBA(g.Bounds(pixels.Bounds()))
-	g.Draw(dest, pixels)
-
+	dest := resize.Resize(360, 0, pixels, resize.Lanczos3)
 	return dest
 }
 
